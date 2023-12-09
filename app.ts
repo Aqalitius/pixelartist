@@ -1,5 +1,5 @@
 import {Grid} from './grid';
-
+import {HistoryManager} from './HistoryManager';
 
 let cellSize = 50;
 
@@ -19,6 +19,7 @@ squaresCanvas.height = canvas.height;
 const grid = new Grid(Math.ceil(canvas.height / cellSize) ,Math.ceil( canvas.width / cellSize)); 
 let gridSize = canvas.width / grid.cols;
 
+const historyManager = new HistoryManager();
 const saveButton = document.getElementById('save-btn') as HTMLButtonElement;
 const modal = document.getElementById('modal') as HTMLDivElement;  
 const closeBtn = document.querySelector('.close') as HTMLSpanElement;
@@ -28,7 +29,8 @@ const cellSizeDropdown = document.getElementById('cell-size-dropdown') as HTMLSe
 const clearButton = document.getElementById('clear-btn') as HTMLButtonElement;
 const colorPicker = document.getElementById('color-picker') as HTMLInputElement;
 let currentColor = 'black';
-
+const undoButton = document.getElementById('undo-btn') as HTMLButtonElement;
+const redoButton = document.getElementById('redo-btn') as HTMLButtonElement;
 let isDrawing = false;
 let isSaved = false;
 let hasDrawn = false;
@@ -37,6 +39,8 @@ let y = 0;
 
 
 saveButton.addEventListener('click', e => {
+    // 'block' : display the modal as a block element
+    // block element : display the element as a block, like <p> and <div> 
     modal.style.display = 'block';
 }); 
 
@@ -55,8 +59,12 @@ canvas.addEventListener('click', e => {
 
 
 confirmBtn.addEventListener('click', e => {
+    // get the filename from the input
     const filename = filenameInput.value;
+
     squaresCtx.fillStyle = 'rgba(0,0,0,0)';
+    // clearRect : clear the canvas
+    // before saving the canvas, we need to clear the canvas to its blank state
     squaresCtx.clearRect(0, 0, squaresCanvas.width, squaresCanvas.height);
     for (let row = 0; row < grid.rows; row++) {
         for (let col = 0; col < grid.cols; col++) {
@@ -79,6 +87,7 @@ confirmBtn.addEventListener('click', e => {
     modal.style.display = 'none';
 });
 
+// if the user tries to leave the page without saving the canvas, display a warning message
 window.addEventListener('beforeunload', e => {
     if (!isSaved && hasDrawn) {
         e.preventDefault();
@@ -90,6 +99,26 @@ window.addEventListener('beforeunload', e => {
     }
 });
 
+
+// key events
+window.addEventListener('keydown', e => {
+    if (e.ctrlKey && e.key === 'z') {
+        const state = historyManager.undo();
+        if (state) {
+            grid.setGrid(state);
+            draw();
+        }
+    } else if (e.ctrlKey && e.key === 'y') {
+        const state = historyManager.redo();
+        if (state) {
+            grid.setGrid(state);
+            draw();
+        }
+
+        // prevent the browsers default redo action  
+        e.preventDefault();
+    }
+} );
 
 
 function draw() {
@@ -111,11 +140,14 @@ function drawOnMouseEvents(e: MouseEvent) {
     const row = Math.floor(y / gridSize);
     const col = Math.floor(x / gridSize);
 
-    console.log(`Clicked at x=${x}, y=${y}`);
-    console.log(`Calculated row=${row}, col=${col}`);
     // set the color of the cell
     if (isDrawing) {
+        // print current color 
+        console.log('Current color: ', currentColor);
         grid.setColor(row, col, currentColor);
+        
+        // print grid to console 
+        console.log('Grid after drawing: ', grid.getGrid());
     }
     // redraw the grid
     for (let row = 0; row < grid.rows; row++) {
@@ -130,22 +162,25 @@ function drawOnMouseEvents(e: MouseEvent) {
 canvas.addEventListener('mousedown', e => {
     isDrawing = true;
     hasDrawn = true;
+    historyManager.saveState(grid.getGrid());
     drawOnMouseEvents(e);
 });
 
+// to continue drawing when the mouse is moved 
 canvas.addEventListener('mousemove', e => {
-    if (!isDrawing) return;
+    if (!isDrawing) return; // if the mouse is not pressed, do not draw
     drawOnMouseEvents(e);
 });
 
 canvas.addEventListener('mouseup', (e) => {
-    drawOnMouseEvents(e);
-    isDrawing = false;
+    drawOnMouseEvents(e); // draw the last cell
+    historyManager.saveState(grid.getGrid());
+    isDrawing = false; // stop drawing
 });
 
 // add an event listener for the change event 
 cellSizeDropdown.addEventListener('change', e => {
-    console.log('hasDrawn: ', hasDrawn);
+    
     if(hasDrawn) return;
     
     // get the selected value 
@@ -169,7 +204,6 @@ cellSizeDropdown.addEventListener('change', e => {
     const numCols = Math.ceil(canvas.width / cellSize);
 
     // if the grid has not been drawn, redraw the grid
-    
         grid.update(numRows, numCols);
         gridSize = canvas.width / grid.cols;
         draw();
@@ -194,6 +228,30 @@ colorPicker.addEventListener('change', (e) => {
     
 });
 
+
+undoButton.addEventListener('click', e => {
+    console.log('undo clicked');
+    const state = historyManager.undo();
+    if (state) {
+        let gridBeforeUndo = grid.getGrid();
+        grid.setGrid(state);
+        let gridAfterUndo = grid.getGrid();
+        if (JSON.stringify(gridBeforeUndo) === JSON.stringify(gridAfterUndo)) {
+            console.log('grid before undo is the same as grid after undo');
+        }
+        draw();
+    }
+});
+
+redoButton.addEventListener('click', e => {
+    const state = historyManager.redo();
+    if (state) {
+        console.log('Grid before redo: ', grid.getGrid());
+        grid.setGrid(state);
+        console.log('Grid after redo: ', grid.getGrid());
+        draw();
+    }
+});
 
 
 

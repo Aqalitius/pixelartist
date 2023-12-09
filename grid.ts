@@ -11,6 +11,15 @@ export class Grid {
         this.grid = Array(rows).fill(null).map(() => Array(cols).fill(defaultColor));
     }
 
+    // get grid
+    getGrid() {
+        return this.grid;
+    }
+
+    setGrid(newState: string[][]) {
+        this.grid = JSON.parse(JSON.stringify(newState));
+    }
+
     // update rows and cols
     update(rows: number, cols: number) {
         this.rows = rows;
