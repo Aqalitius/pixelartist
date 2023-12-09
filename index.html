@@ -4,7 +4,13 @@
     <meta charset="UTF-8">
     <title>Home</title>
     <link rel="stylesheet" type="text/css" href="styles.css">
+    <!-- One of the following themes -->
+
     <body> 
+        <div id="controls">
+            
+            
+        <div id="cursor"> </div>
         <button id="undo-btn">Undo</button>
         <button id="redo-btn">Redo</button> 
         <input type="color" id="color-picker">
@@ -14,8 +20,11 @@
             <option value="large">Large</option>
         </select>
         <button id="clear-btn">Clear</button>
+        </div>
         <canvas id="canvas" width="1300" height="900"></canvas>
         <button id="save-btn">Save as PNG</button>
+        <input type="file" id="file-input" accept="image/png">
+        <button id="load-btn">Load</button>
         <div id="modal" class="modal">
             <div class="modal-content">
                 <span class="close">&times;</span>

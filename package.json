@@ -4,9 +4,11 @@
     "webpack": "^5.89.0",
     "webpack-cli": "^5.1.4"
   },
-
   "scripts": {
     "build": "webpack --mode development",
     "watch": "webpack --watch --mode development"
-}
+  },
+  "dependencies": {
+    "@simonwep/pickr": "^1.9.0"
+  }
 }
