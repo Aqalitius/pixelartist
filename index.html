@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Home</title>
+    <link rel="stylesheet" type="text/css" href="styles.css">
+    <body>  
+        <input type="color" id="color-picker">
+        <select id="cell-size-dropdown">
+            <option value="small">Small</option>
+            <option value="medium" selected>Medium</option>
+            <option value="large">Large</option>
+        </select>
+        <button id="clear-btn">Clear</button>
+        <canvas id="canvas" width="1300" height="900"></canvas>
+        <button id="save-btn">Save as PNG</button>
+        <div id="modal" class="modal">
+            <div class="modal-content">
+                <span class="close">&times;</span>
+                <p> SAVING DRAWING </p>
+                <p>Enter a filename: </p>
+                <input id="filename-input" type="text" name="canvas.png">
+                <button id="confirm-btn">Confirm</button>
+            </div>
+        <script src="dist/bundle.js"></script>
+    <h1>Hi</h1>
+
+    </body>
+</html>
