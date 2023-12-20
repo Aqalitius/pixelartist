@@ -1,12 +1,12 @@
-import {Grid} from './grid';
-import {HistoryManager} from './HistoryManager';
+import { Grid } from './grid';
+import { HistoryManager } from './HistoryManager';
 // One of the following themes
 
 
 
 let cellSize = 50;
 
-let db : IDBDatabase; 
+let db: IDBDatabase;
 const request = indexedDB.open('pixelArtDatabase', 1);
 
 
@@ -14,18 +14,18 @@ const request = indexedDB.open('pixelArtDatabase', 1);
 
 // Desc: Main entry point for the application
 const canvas = document.getElementById('canvas') as HTMLCanvasElement;
-const ctx = canvas.getContext('2d')!; 
+const ctx = canvas.getContext('2d')!;
 const squaresCanvas = document.createElement('canvas');
 const squaresCtx = squaresCanvas.getContext('2d')!;
 squaresCanvas.width = canvas.width;
 squaresCanvas.height = canvas.height;
 
-const grid = new Grid(Math.ceil(canvas.height / cellSize) ,Math.ceil( canvas.width / cellSize)); 
+const grid = new Grid(Math.ceil(canvas.height / cellSize), Math.ceil(canvas.width / cellSize));
 let gridSize = canvas.width / grid.cols;
 
 const historyManager = new HistoryManager();
 const saveButton = document.getElementById('save-btn') as HTMLButtonElement;
-const modal = document.getElementById('modal') as HTMLDivElement;  
+const modal = document.getElementById('modal') as HTMLDivElement;
 const closeBtn = document.querySelector('.close') as HTMLSpanElement;
 const confirmBtn = document.getElementById('confirm-btn') as HTMLButtonElement;
 const filenameInput = document.getElementById('filename-input') as HTMLInputElement;
@@ -38,42 +38,67 @@ const redoButton = document.getElementById('redo-btn') as HTMLButtonElement;
 const cursorDiv = document.getElementById('cursor') as HTMLDivElement;
 const loadButton = document.getElementById('load-btn') as HTMLButtonElement;
 const fileInput = document.getElementById('file-input') as HTMLInputElement;
-
+const fillButton = document.getElementById('fill-btn') as HTMLButtonElement;
+const eraserButton = document.getElementById('erase-btn') as HTMLButtonElement;
 
 let isDrawing = false;
 let isSaved = false;
 let hasDrawn = false;
-let x = 0; 
+let x = 0;
 let y = 0;
-
+let fillMode = false;
+let eraserMode = false;
 
 saveButton.addEventListener('click', e => {
     // 'block' : display the modal as a block element
     // block element : display the element as a block, like <p> and <div> 
     modal.style.display = 'block';
-}); 
+});
 
 
 closeBtn.addEventListener('click', e => {
     modal.style.display = 'none';
 });
 
+fillButton.addEventListener('click', e => {
+    
+    if(eraserMode) return;
+    
+    fillMode = !fillMode;
+    if (fillMode) {
+        fillButton.style.backgroundColor = 'lightgreen';
+    } else {
+        fillButton.style.backgroundColor = 'white';
+    }
+});
+
+
+eraserButton.addEventListener('click', e => {
+    
+    if (fillMode) return;
+    eraserMode = !eraserMode;
+    if (eraserMode) {
+        eraserButton.style.backgroundColor = 'lightgreen';
+    } else {
+        eraserButton.style.backgroundColor = 'white';
+    }
+});
 
 // IDBVersionChangeEvent : an interface of the IndexedDB API
 // onupgradeneeded : an event handler for the upgradeneeded event
 // upgradeneeded : an event that is fired when the database is opened with a version number higher than its current version
 request.onupgradeneeded = (e: IDBVersionChangeEvent) => {
     // e.target : the object that fired the event
-    const req  = e.target as IDBOpenDBRequest;
-    db = req.result; 
+    const req = e.target as IDBOpenDBRequest;
+    db = req.result;
     // objectStore : a transactional database object store that allows access to a set of data in the database
     // objectStoreNames : a DOMStringList that contains a list of the names of the object stores currently in the database
     // contains : check if the list contains the given name
-    if(!db.objectStoreNames.contains('gridStates')) {
+    if (!db.objectStoreNames.contains('gridStates')) {
         // createObjectStore : create a new object store in the connected database
-        db.createObjectStore('gridStates', {keyPath: 'filename'});
+        db.createObjectStore('gridStates', { keyPath: 'filename' });
     }
-} 
+}
 
 request.onsuccess = (e: Event) => {
     const req = e.target as IDBOpenDBRequest;
@@ -87,7 +112,7 @@ request.onerror = (e: Event) => {
 
 
 canvas.addEventListener('click', e => {
-  
+
 });
 
 
@@ -99,7 +124,7 @@ confirmBtn.addEventListener('click', e => {
     // clearRect : clear the canvas
     // before saving the canvas, we need to clear the canvas to its blank state
     squaresCtx.clearRect(0, 0, squaresCanvas.width, squaresCanvas.height);
-    let gridState = []; 
+    let gridState = [];
     for (let row = 0; row < grid.rows; row++) {
         let rowState = [];
         for (let col = 0; col < grid.cols; col++) {
@@ -127,7 +152,7 @@ confirmBtn.addEventListener('click', e => {
     // save the grid state to the database
     const transaction = db.transaction(['gridStates'], 'readwrite');
     const objectStore = transaction.objectStore('gridStates');
-    objectStore.put({filename, gridState});
+    objectStore.put({ filename, gridState });
 });
 
 
@@ -137,13 +162,13 @@ loadButton.addEventListener('click', e => {
 
 // this actually does not loads instead it gets name of the file and look for database for the saved grid state
 fileInput.addEventListener('change', e => {
-      if(fileInput.files && fileInput.files.length > 0) {
+    if (fileInput.files && fileInput.files.length > 0) {
         const file = fileInput.files[0];
         const filename = file.name.replace('.png', '');
         load(filename);
-      }
+    }
 
-    });
+});
 
 
 // if the user tries to leave the page without saving the canvas, display a warning message
@@ -153,7 +178,7 @@ window.addEventListener('beforeunload', e => {
         e.returnValue = '';
     }
 
-    if(e.target === modal) {
+    if (e.target === modal) {
         modal.style.display = 'none';
     }
 });
@@ -177,7 +202,7 @@ window.addEventListener('keydown', e => {
         // prevent the browsers default redo action  
         e.preventDefault();
     }
-} );
+});
 
 
 
@@ -207,7 +232,7 @@ function load(filename: string) {
         } else {
             console.log('File not found');
         }
-    }; 
+    };
 
     request.onerror = (e: Event) => {
         console.log('Error loading file');
@@ -225,15 +250,30 @@ function drawOnMouseEvents(e: MouseEvent) {
     const row = Math.floor(y / gridSize);
     const col = Math.floor(x / gridSize);
 
+
+    if (fillMode) {
+        console.log('fill mode');
+        const rect = canvas.getBoundingClientRect();
+        const x = Math.floor((e.clientX - rect.left) / cellSize); // assuming cellSize is the size of a cell in pixels
+        const y = Math.floor((e.clientY - rect.top) / cellSize);
+        fill(x, y, currentColor);
+    }
+
     // set the color of the cell
     if (isDrawing) {
         // print current color 
-        console.log('Current color: ', currentColor);
+
         grid.setColor(row, col, currentColor);
-        
+
         // print grid to console 
-        console.log('Grid after drawing: ', grid.getGrid());
+
     }
+
+    if (eraserMode) {
+        erase(col, row);
+    }
+
+
     // redraw the grid
     for (let row = 0; row < grid.rows; row++) {
         for (let col = 0; col < grid.cols; col++) {
@@ -243,6 +283,41 @@ function drawOnMouseEvents(e: MouseEvent) {
         }
     }
 }
+
+function fill(startX: number, startY: number, fillColor: string) {
+    console.log('filling');
+    const startColor = grid.getGrid()[startY][startX];
+    if (startColor === fillColor) return;
+
+    const queue = [[startX, startY]];
+
+    while (queue.length > 0) {
+        let point = queue.shift();
+        if (point) {
+
+            const [x, y] = point;
+            const currentColor = grid.getGrid()[y][x];
+
+            if (currentColor === startColor) {
+                grid.getGrid()[y][x] = fillColor;
+                if (x > 0) queue.push([x - 1, y]);
+                if (x < grid.cols - 1) queue.push([x + 1, y]);
+                if (y > 0) queue.push([x, y - 1]);
+                if (y < grid.rows - 1) queue.push([x, y + 1]);
+            }
+        }
+    }
+}
+
+
+// erasing function with clearRect
+function erase(x: number, y: number) {
+    ctx.clearRect(x * gridSize, y * gridSize, gridSize, gridSize);
+    grid.setColor(y, x, grid.getDefaultColor());
+}
+
+
+
 // Modify your mouse event listeners to use the visible canvas
 canvas.addEventListener('mousedown', e => {
     isDrawing = true;
@@ -259,7 +334,7 @@ canvas.addEventListener('mousemove', e => {
     cursorDiv.style.top = `${e.pageY - cursorDiv.offsetHeight / 2}px`;
     cursorDiv.style.backgroundColor = currentColor;
     cursorDiv.style.display = 'block';
-    
+
     if (!isDrawing) return; // if the mouse is not pressed, do not draw
     drawOnMouseEvents(e);
 });
@@ -280,9 +355,9 @@ canvas.addEventListener('mouseup', (e) => {
 
 // add an event listener for the change event 
 cellSizeDropdown.addEventListener('change', e => {
-    
-    if(hasDrawn) return;
-    
+
+    if (hasDrawn) return;
+
     // get the selected value 
     const selectedValue = cellSizeDropdown.value;
     switch (selectedValue) {
@@ -304,18 +379,18 @@ cellSizeDropdown.addEventListener('change', e => {
     const numCols = Math.ceil(canvas.width / cellSize);
 
     // if the grid has not been drawn, redraw the grid
-        grid.update(numRows, numCols);
-        gridSize = canvas.width / grid.cols;
-        draw();
-    
-    
+    grid.update(numRows, numCols);
+    gridSize = canvas.width / grid.cols;
+    draw();
+
+
 });
 
 
 clearButton.addEventListener('click', e => {
     grid.clear();
     draw();
-}   );
+});
 
 // Add an event listener for the change event
 colorPicker.addEventListener('change', (e) => {
@@ -325,19 +400,19 @@ colorPicker.addEventListener('change', (e) => {
     // Set the drawer color to the selected color
     currentColor = selectedColor;
 
-    
+
 });
 
 
 undoButton.addEventListener('click', e => {
-    console.log('undo clicked');
+
     const state = historyManager.undo();
     if (state) {
         let gridBeforeUndo = grid.getGrid();
         grid.setGrid(state);
         let gridAfterUndo = grid.getGrid();
         if (JSON.stringify(gridBeforeUndo) === JSON.stringify(gridAfterUndo)) {
-            console.log('grid before undo is the same as grid after undo');
+
         }
         draw();
     }
@@ -346,9 +421,9 @@ undoButton.addEventListener('click', e => {
 redoButton.addEventListener('click', e => {
     const state = historyManager.redo();
     if (state) {
-        console.log('Grid before redo: ', grid.getGrid());
+
         grid.setGrid(state);
-        console.log('Grid after redo: ', grid.getGrid());
+
         draw();
     }
 });
