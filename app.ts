@@ -40,6 +40,7 @@ const loadButton = document.getElementById('load-btn') as HTMLButtonElement;
 const fileInput = document.getElementById('file-input') as HTMLInputElement;
 const fillButton = document.getElementById('fill-btn') as HTMLButtonElement;
 const eraserButton = document.getElementById('erase-btn') as HTMLButtonElement;
+const colorPickerButton = document.getElementById('color-picker-btn') as HTMLButtonElement;
 
 let isDrawing = false;
 let isSaved = false;
@@ -48,6 +49,17 @@ let x = 0;
 let y = 0;
 let fillMode = false;
 let eraserMode = false;
+let colorPickerMode = false;
+
+// add an event listener for the click event
+colorPickerButton.addEventListener('click', e => {
+    colorPickerMode = !colorPickerMode;
+    if (colorPickerMode) {
+        colorPickerButton.style.backgroundColor = 'lightgreen';
+    } else {
+        colorPickerButton.style.backgroundColor = 'white';
+    }
+});
 
 saveButton.addEventListener('click', e => {
     // 'block' : display the modal as a block element
@@ -61,9 +73,9 @@ closeBtn.addEventListener('click', e => {
 });
 
 fillButton.addEventListener('click', e => {
-    
-    if(eraserMode) return;
-    
+
+    if (eraserMode) return;
+
     fillMode = !fillMode;
     if (fillMode) {
         fillButton.style.backgroundColor = 'lightgreen';
@@ -74,7 +86,7 @@ fillButton.addEventListener('click', e => {
 
 
 eraserButton.addEventListener('click', e => {
-    
+
     if (fillMode) return;
     eraserMode = !eraserMode;
     if (eraserMode) {
@@ -286,18 +298,22 @@ function drawOnMouseEvents(e: MouseEvent) {
 
 function fill(startX: number, startY: number, fillColor: string) {
     console.log('filling');
+    // get the color of the clicked cell
     const startColor = grid.getGrid()[startY][startX];
+    // if the clicked cell is already filled with the selected color, do not fill
     if (startColor === fillColor) return;
-
+    // add the clicked cell to the queue
     const queue = [[startX, startY]];
 
     while (queue.length > 0) {
+        // get the first element from the queue
         let point = queue.shift();
         if (point) {
 
+            // get the x and y coordinates of the point
             const [x, y] = point;
             const currentColor = grid.getGrid()[y][x];
-
+            // if the color of the current cell is the same as the color of the first clicked cell, fill the cell with the selected color
             if (currentColor === startColor) {
                 grid.getGrid()[y][x] = fillColor;
                 if (x > 0) queue.push([x - 1, y]);
@@ -320,10 +336,26 @@ function erase(x: number, y: number) {
 
 // Modify your mouse event listeners to use the visible canvas
 canvas.addEventListener('mousedown', e => {
-    isDrawing = true;
-    hasDrawn = true;
-    historyManager.saveState(grid.getGrid());
-    drawOnMouseEvents(e);
+    if (colorPickerMode) {
+        const rect = canvas.getBoundingClientRect();
+        const x = Math.floor((e.clientX - rect.left) / cellSize); // assuming cellSize is the size of a cell in pixels
+        const y = Math.floor((e.clientY - rect.top) / cellSize);
+        const image = ctx.getImageData(x * gridSize + gridSize / 2, y * gridSize + gridSize / 2, 1, 1);
+        const clickedColor = `rgb(${image.data[0]}, ${image.data[1]}, ${image.data[2]})`;
+        currentColor = clickedColor;
+        colorPicker.value = rgbToHex(image.data[0], image.data[1], image.data[2]);
+
+    }
+
+    else {
+
+        isDrawing = true;
+        hasDrawn = true;
+        historyManager.saveState(grid.getGrid());
+        drawOnMouseEvents(e);
+    }
+
+
 });
 
 // to continue drawing when the mouse is moved 
@@ -427,6 +459,10 @@ redoButton.addEventListener('click', e => {
         draw();
     }
 });
+
+function rgbToHex(r: number, g: number, b: number): string {
+    return "#" + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
+}
 
 
 
